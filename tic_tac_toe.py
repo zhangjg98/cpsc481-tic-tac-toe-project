@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+import random
 import threading
 
 class Player:
@@ -81,7 +82,7 @@ class Game:
         # Set player2 based on selected player type
         player_type = self.player2.name
         if player_type == "AI":
-            self.player2 = Player("AI", "O", self.difficulty_var.get())
+            self.player2 = Player("AI", "O", self.player2.difficulty)
         else:
             self.player2 = Player("Player 2", "O") # Default human player 2
 
@@ -175,21 +176,27 @@ class Game:
     def get_best_move(self, player_symbol: str, opponent_symbol: str, win_condition: int, max_depth: int) -> tuple:
         """Uses the minimax algorithm with alpha-beta pruning to determine the best move for the AI player"""
         empty_spaces = self.get_empty_spaces()
-        best_score = -float("inf")
-        best_move = None
-        alpha = -float("inf")
-        beta = float("inf")
 
-        for row, column in empty_spaces:
-            self.board[row][column] = player_symbol
-            score = self.minimax(self.board, 0, alpha, beta, False, win_condition, player_symbol, opponent_symbol, max_depth)
-            self.board[row][column] = " "
+        # Check if the AI difficulty is easy
+        if self.player2.difficulty == "easy":
+            # Add randomness to the decision-making process so that AI might be more prone to mistakes
+            return random.choice(empty_spaces) if empty_spaces else None    
+        else:
+            best_score = -float("inf")
+            best_move = None
+            alpha = -float("inf")
+            beta = float("inf")
 
-            if score > best_score:
-                best_score = score
-                best_move = (row, column)
+            for row, column in empty_spaces:
+                self.board[row][column] = player_symbol
+                score = self.minimax(self.board, 0, alpha, beta, False, win_condition, player_symbol, opponent_symbol, max_depth)
+                self.board[row][column] = " "
 
-        return best_move
+                if score > best_score:
+                    best_score = score
+                    best_move = (row, column)
+
+            return best_move
 
     def minimax(self, board: list, depth: int, alpha: int, beta: int, is_maximizing: bool, win_condition: int, player_symbol: str, opponent_symbol: str, max_depth: int):
         """Minimax algorithm with alpha-beta pruning for AI player"""
@@ -231,7 +238,7 @@ class Game:
         player_symbol = self.player2.symbol
         opponent_symbol = self.player1.symbol
         win_condition = self.win_condition
-        max_depth = 3
+        max_depth = 3                       # Default depth
 
         best_move = self.get_best_move(player_symbol, opponent_symbol, win_condition, max_depth)
         if best_move is not None:
