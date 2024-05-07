@@ -11,6 +11,39 @@ class Player:
         self.symbol = symbol
         self.difficulty = difficulty
 
+class PlayerStatistics:
+    """Class to track player statistics for the current session."""
+
+    def __init__(self):
+        self.statistics = {}
+
+    def record_win(self, player_name):
+        """Record a win for the player."""
+        if player_name in self.statistics:
+            self.statistics[player_name]["wins"] += 1
+        else:
+            self.statistics[player_name] = {"wins": 1, "losses": 0, "draws": 0}
+
+    def record_loss(self, player_name):
+        """Record a loss for the player."""
+        if player_name in self.statistics:
+            self.statistics[player_name]["losses"] += 1
+        else:
+            self.statistics[player_name] = {"wins": 0, "losses": 1, "draws": 0}
+
+    def record_draw(self, player_name):
+        """Record a draw for the player."""
+        if player_name in self.statistics:
+            self.statistics[player_name]["draws"] += 1
+        else:
+            self.statistics[player_name] = {"wins": 0, "losses": 0, "draws": 1}
+
+    def get_player_stats(self, player_name):
+        """Get the statistics for the specified player."""
+        return self.statistics.get(player_name, {"wins": 0, "losses": 0, "draws": 0})
+    
+player_stats = PlayerStatistics()                       # Global variable to track player statistics
+
 class TicTacToeBoard:
     """Tic Tac Toe Board Class for GUI"""
 
@@ -75,7 +108,6 @@ class Game:
         self.board_size = board_size
         self.win_condition = None
         self.board = None
-        self.winner = None
         self.tic_tac_toe_board = tic_tac_toe_board
         self.current_player = 1
         
@@ -165,7 +197,12 @@ class Game:
 
         self.update_board(row, col, current_player)
         if self.evaluate(current_player.symbol):
+            # Check for a win condition
             messagebox.showinfo("Winner", f"Congratulations! {current_player.name} wins!")
+            self.game_over_dialog()
+        elif len(self.get_empty_spaces()) == 0:
+            # Check for a draw condition
+            messagebox.showinfo("Draw", "It's a draw!")
             self.game_over_dialog()
         else:
             if self.current_player == 1:
@@ -255,7 +292,7 @@ class Game:
             print("AI couldn't find a move.")
 
         if not self.get_empty_spaces() and not self.evaluate(player_symbol) and not self.evaluate(opponent_symbol):
-            messagebox.showinfo("Tie", "It's a tie!")
+            messagebox.showinfo("Draw", "It's a draw!")
             self.game_over_dialog()
             
     def ai_turn(self):
@@ -271,6 +308,29 @@ class Game:
         
     def game_over_dialog(self):
         """Displays a message box when the game is over, which allows for the player to choose their next action."""
+
+        # Determine if there is a winner or if a draw happened for statistic tracking.
+        winner = None
+        if self.evaluate(self.player1.symbol):
+            winner = self.player1.name
+        elif self.evaluate(self.player2.symbol):
+            winner = self.player2.name
+        else:
+            winner = "Draw"
+
+        # Record a win, loss or draw for the players
+        if winner == "Draw":
+            player_stats.record_draw("Player 1")    # Record a draw for Player 1
+
+            # If statement determining whether the Player 2 was an AI or human
+            if self.player2.name == "AI":
+                player_stats.record_draw("AI Player")
+            else:
+                player_stats.record_draw("Player 2")
+        else:
+            player_stats.record_win(winner)
+            player_stats.record_loss(self.player1.name if winner == self.player2.name else self.player2.name)
+    
         choice = messagebox.askquestion("Game Over", "Do you want to play again with the same settings?", icon='question')
         if choice == 'yes':
             self.restart_game()
@@ -293,35 +353,74 @@ class Game:
 
 # End of Game Class
 
+def create_radio_button(parent, text, var, value):
+    """Create a radio button with the given text, variable, and value."""
+    return tk.Radiobutton(parent, text=text, variable=var, value=value)
+
+def create_label(parent, text):
+    """Create a label with the given text."""
+    return tk.Label(parent, text=text)
+
 def initialize_settings_window(root):
     """Creates the settings window for selecting player type, difficulty, board size, and win condition"""
     settings_window = tk.Toplevel(root)
     settings_window.title("Tic Tac Toe Settings")
 
     player_var = tk.StringVar(value="ai")
-    tk.Label(settings_window, text="Choose player type:").grid(row=0, column=0, padx=10, pady=5)
-    tk.Radiobutton(settings_window, text="AI", variable=player_var, value="ai").grid(row=0, column=1, padx=10, pady=5)
-    tk.Radiobutton(settings_window, text="Human", variable=player_var, value="human").grid(row=0, column=2, padx=10, pady=5)
+    create_label(settings_window, "Choose player type:").grid(row=0, column=0, padx=10, pady=5)
+    create_radio_button(settings_window, "AI", player_var, "ai").grid(row=0, column=1, padx=10, pady=5)
+    create_radio_button(settings_window, "Human", player_var, "human").grid(row=0, column=2, padx=10, pady=5)
 
     difficulty_var = tk.StringVar(value="hard")
-    tk.Label(settings_window, text="Choose difficulty level:").grid(row=1, column=0, padx=10, pady=5)
-    tk.Radiobutton(settings_window, text="Easy", variable=difficulty_var, value="easy").grid(row=1, column=1, padx=10, pady=5)
-    tk.Radiobutton(settings_window, text="Hard", variable=difficulty_var, value="hard").grid(row=1, column=2, padx=10, pady=5)
+    create_label(settings_window, "Choose difficulty level:").grid(row=1, column=0, padx=10, pady=5)
+    create_radio_button(settings_window, "Easy", difficulty_var, "easy").grid(row=1, column=1, padx=10, pady=5)
+    create_radio_button(settings_window, "Hard", difficulty_var, "hard").grid(row=1, column=2, padx=10, pady=5)
 
-    board_size_label = tk.Label(settings_window, text="Enter the size of the board (3-5):")
-    board_size_label.grid(row=2, column=0, padx=10, pady=5)
+    create_label(settings_window, "Enter the size of the board (3-5):").grid(row=2, column=0, padx=10, pady=5)
     board_size_entry = tk.Entry(settings_window)
     board_size_entry.grid(row=2, column=1, padx=10, pady=5)
 
-    win_condition_label = tk.Label(settings_window, text="Enter the desired number of consecutive symbols for your win condition (should not exceed board size):")
-    win_condition_label.grid(row=3, column=0, padx=10, pady=5)
+    create_label(settings_window, "Enter the desired number of consecutive symbols for your win condition (should not exceed board size):").grid(row=3, column=0, padx=10, pady=5)
     win_condition_entry = tk.Entry(settings_window)
     win_condition_entry.grid(row=3, column=1, padx=10, pady=5)
 
     start_button = tk.Button(settings_window, text="Start Game", command=lambda: start_game(settings_window, board_size_entry, win_condition_entry, player_var, difficulty_var))
     start_button.grid(row=4, column=1, padx=10, pady=10)
 
+    view_stats_button = tk.Button(settings_window, text="View Statistics", command=lambda: view_statistics(settings_window))
+    view_stats_button.grid(row=5, column=1, padx=10, pady=10)
+
     return settings_window
+
+def view_statistics(parent_window):
+    """Displays a new window to show player statistics"""
+    stats_window = tk.Toplevel(parent_window)
+    stats_window.title("Player Statistics")
+
+    # Retrieve player statistics
+    player1_stats = player_stats.get_player_stats("Player 1")
+    player2_stats = player_stats.get_player_stats("Player 2")
+    ai_stats = player_stats.get_player_stats("AI Player")
+
+    # Populate statistics window with player statistics
+    create_label(stats_window, text="Player 1 Statistics").grid(row=0, column=0, padx=10, pady=5)
+    create_label(stats_window, text=f"Wins: {player1_stats['wins']}").grid(row=1, column=0, padx=10, pady=5)
+    create_label(stats_window, text=f"Losses: {player1_stats['losses']}").grid(row=2, column=0, padx=10, pady=5)
+    create_label(stats_window, text=f"Draws: {player1_stats['draws']}").grid(row=3, column=0, padx=10, pady=5)
+
+    create_label(stats_window, text="Player 2 Statistics").grid(row=0, column=1, padx=10, pady=5)
+    create_label(stats_window, text=f"Wins: {player2_stats['wins']}").grid(row=1, column=1, padx=10, pady=5)
+    create_label(stats_window, text=f"Losses: {player2_stats['losses']}").grid(row=2, column=1, padx=10, pady=5)
+    create_label(stats_window, text=f"Draws: {player2_stats['draws']}").grid(row=3, column=1, padx=10, pady=5)
+
+    create_label(stats_window, text="AI Player Statistics").grid(row=0, column=2, padx=10, pady=5)
+    create_label(stats_window, text=f"Wins: {ai_stats['wins']}").grid(row=1, column=2, padx=10, pady=5)
+    create_label(stats_window, text=f"Losses: {ai_stats['losses']}").grid(row=2, column=2, padx=10, pady=5)
+    create_label(stats_window, text=f"Draws: {ai_stats['draws']}").grid(row=3, column=2, padx=10, pady=5)
+
+    # Button to close the statistics window
+    close_button = tk.Button(stats_window, text="Close", command=stats_window.destroy)
+    close_button.grid(row=4, column=1, padx=10, pady=10)
 
 def start_game(settings_window, board_size_entry, win_condition_entry, player_var, difficulty_var):
     """Starts the Tic Tac Toe game with the selected settings"""
