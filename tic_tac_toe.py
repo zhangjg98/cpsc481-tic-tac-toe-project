@@ -57,6 +57,7 @@ class TicTacToeBoard:
             return # Skip initialization if the board has already been initialized
         self.board_size = self.game_instance.board_size
         self.win_condition = self.game_instance.win_condition
+
         """Initializes the game board"""
         if self.board_size is None:
             raise ValueError("Board size is not set.")
@@ -64,25 +65,32 @@ class TicTacToeBoard:
         for row in range(self.board_size):
             row_buttons = []
             for col in range(self.board_size):
-                button = tk.Button(self.root, text="", width=5, height=2, command=lambda r=row, c=col: self.handle_button_click(r, c))
-                button.grid(row=row + 3, column=col, padx=5, pady=5)
+                button = tk.Button(self.root, text="", command=lambda r=row, c=col: self.handle_button_click(r, c))
+                button.grid(row=row + 3, column=col, padx=5, pady=5, sticky="nsew")
                 row_buttons.append(button)
             self.board_buttons.append(row_buttons)
+        
+        for i in range(self.board_size):
+            self.root.grid_rowconfigure(i + 3, weight=1)
+            self.root.grid_columnconfigure(i, weight=1)
+
         self.board_initialized = True
     
     def update_gui_board(self, player1, player2):
         """Updates the GUI board with the player symbols"""
         if self.board_size is None or self.game_board is None:
             return  # Return if board size or board is not initialized
+        
+        font_size = -int(100 / self.board_size)
 
         for row in range(self.board_size):
             for col in range(self.board_size):
                 if self.game_board[row][col] == player1.symbol:
-                    self.board_buttons[row][col].config(text="X", state='disabled', disabledforeground='blue')
+                    self.board_buttons[row][col].config(text="X", font=("Arial", font_size), state='disabled', disabledforeground='blue')
                 elif self.game_board[row][col] == player2.symbol:
-                    self.board_buttons[row][col].config(text="O", state='disabled', disabledforeground='red')
+                    self.board_buttons[row][col].config(text="O", font=("Arial", font_size), state='disabled', disabledforeground='red')
                 else:
-                    self.board_buttons[row][col].config(text="", state='normal')
+                    self.board_buttons[row][col].config(text="", font=("Arial", font_size), state='normal')
     
     def handle_button_click(self, row, col):
         """Handles button click event"""
@@ -196,12 +204,10 @@ class Game:
         self.update_board(row, col, current_player)
         if self.evaluate(current_player.symbol):
             # Check for a win condition
-            messagebox.showinfo("Winner", f"Congratulations! {current_player.name} wins!")
-            self.game_over_dialog()
+            self.game_over_dialog(current_player)
         elif len(self.get_empty_spaces()) == 0:
             # Check for a draw condition
-            messagebox.showinfo("Draw", "It's a draw!")
-            self.game_over_dialog()
+            self.game_over_dialog(None)
         else:
             if self.current_player == 1:
                 self.current_player = 2
@@ -284,14 +290,10 @@ class Game:
             self.update_board(row, col, self.player2)
 
             if self.evaluate(player_symbol):
-                messagebox.showinfo("Loser", "Sorry, you lose!")
-                self.game_over_dialog()
-        else:
-            print("AI couldn't find a move.")
+                self.game_over_dialog(self.player2)
 
         if not self.get_empty_spaces() and not self.evaluate(player_symbol) and not self.evaluate(opponent_symbol):
-            messagebox.showinfo("Draw", "It's a draw!")
-            self.game_over_dialog()
+            self.game_over_dialog(None)
             
     def ai_turn(self):
         """Handles the AI player's turn"""
@@ -304,30 +306,29 @@ class Game:
         else:
             return 0
         
-    def game_over_dialog(self):
+    def game_over_dialog(self, winner):
         """Displays a message box when the game is over, which allows for the player to choose their next action."""
 
-        # Determine if there is a winner or if a draw happened for statistic tracking.
-        winner = None
-        if self.evaluate(self.player1.symbol):
-            winner = self.player1.name
-        elif self.evaluate(self.player2.symbol):
-            winner = self.player2.name
+        if winner:
+            if winner.name == "AI":
+                messagebox.showinfo("Loser", "Sorry, you lose!")
+            else:
+                messagebox.showinfo("Winner", f"Congratulations! {winner.name} wins!")
         else:
-            winner = "Draw"
+            messagebox.showinfo("Draw", "It's a draw!")
 
-        # Record a win, loss or draw for the players
-        if winner == "Draw":
-            player_stats.record_draw("Player 1")    # Record a draw for Player 1
+        # Record player statistics
+        if winner:
+            player_stats.record_win(winner.name)
+            player_stats.record_loss(self.player1.name if winner.name == self.player2.name else self.player2.name)
+        else:
+            player_stats.record_draw("Player 1")
 
             # If statement determining whether the Player 2 was an AI or human
             if self.player2.name == "AI":
-                player_stats.record_draw("AI Player")
+                player_stats.record_draw("AI")
             else:
                 player_stats.record_draw("Player 2")
-        else:
-            player_stats.record_win(winner)
-            player_stats.record_loss(self.player1.name if winner == self.player2.name else self.player2.name)
     
         choice = messagebox.askquestion("Game Over", "Do you want to play again with the same settings?", icon='question')
         if choice == 'yes':
@@ -392,13 +393,27 @@ def initialize_settings_window(root):
 
 def view_statistics(parent_window):
     """Displays a new window to show player statistics"""
+
+    # Check if the player statistics window is already open
+    if hasattr(parent_window, 'stats_window') and parent_window.stats_window:
+        try:
+            parent_window.stats_window.lift()
+        except tk.TclError:
+            # If the window no longer exists, recreate it
+            del parent_window.stats_window
+            view_statistics(parent_window)
+        return
+
     stats_window = tk.Toplevel(parent_window)
     stats_window.title("Player Statistics")
+
+    # Store the reference to the statistics window in the parent_window
+    parent_window.stats_window = stats_window
 
     # Retrieve player statistics
     player1_stats = player_stats.get_player_stats("Player 1")
     player2_stats = player_stats.get_player_stats("Player 2")
-    ai_stats = player_stats.get_player_stats("AI Player")
+    ai_stats = player_stats.get_player_stats("AI")
 
     # Populate statistics window with player statistics
     create_label(stats_window, text="Player 1 Statistics").grid(row=0, column=0, padx=10, pady=5)
@@ -416,8 +431,13 @@ def view_statistics(parent_window):
     create_label(stats_window, text=f"Losses: {ai_stats['losses']}").grid(row=2, column=2, padx=10, pady=5)
     create_label(stats_window, text=f"Draws: {ai_stats['draws']}").grid(row=3, column=2, padx=10, pady=5)
 
+    def on_close():
+        # Clear the reference to the statistics window in the parent_window
+        parent_window.stats_window = None
+        stats_window.destroy()
+
     # Button to close the statistics window
-    close_button = tk.Button(stats_window, text="Close", command=stats_window.destroy)
+    close_button = tk.Button(stats_window, text="Close", command=on_close)
     close_button.grid(row=4, column=1, padx=10, pady=10)
 
 def start_game(settings_window, board_size_entry, win_condition_entry, player_var, difficulty_var):
@@ -440,6 +460,10 @@ def start_game(settings_window, board_size_entry, win_condition_entry, player_va
     if win_condition < 3 or win_condition > board_size:
         messagebox.showerror("Error", "Win condition must be between 3 and the board size.")
         return
+
+    # Close the statistics window if it's open
+    if hasattr(settings_window, 'stats_window') and settings_window.stats_window:
+        settings_window.stats_window.destroy()
 
     player_type = player_var.get()
     difficulty = difficulty_var.get()
