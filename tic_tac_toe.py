@@ -15,35 +15,33 @@ class PlayerStatistics:
     """Class to track player statistics for the current session."""
 
     def __init__(self):
-        self.statistics = {}
+        self.statistics = {}   # Initialization
 
     def record_win(self, player_name):
         """Record a win for the player."""
-        if player_name in self.statistics:
-            self.statistics[player_name]["wins"] += 1
+        if player_name in self.statistics:   # Check if the player has already played a game
+            self.statistics[player_name]["wins"] += 1   # Increment wins by 1
         else:
-            self.statistics[player_name] = {"wins": 1, "losses": 0, "draws": 0}
+            self.statistics[player_name] = {"wins": 1, "losses": 0, "draws": 0}   # Create a new record of this player and increment their wins by 1
 
     def record_loss(self, player_name):
         """Record a loss for the player."""
-        if player_name in self.statistics:
-            self.statistics[player_name]["losses"] += 1
+        if player_name in self.statistics:   # Check if the player has already played a game
+            self.statistics[player_name]["losses"] += 1   # Increment losses by 1
         else:
-            self.statistics[player_name] = {"wins": 0, "losses": 1, "draws": 0}
+            self.statistics[player_name] = {"wins": 0, "losses": 1, "draws": 0}   # Create a new record of this player and increment their losses by 1
 
     def record_draw(self, player_name):
         """Record a draw for the player."""
-        if player_name in self.statistics:
-            self.statistics[player_name]["draws"] += 1
+        if player_name in self.statistics:   # Check if the player has already played a game
+            self.statistics[player_name]["draws"] += 1   # Increment draws by 1
         else:
-            self.statistics[player_name] = {"wins": 0, "losses": 0, "draws": 1}
+            self.statistics[player_name] = {"wins": 0, "losses": 0, "draws": 1}   # Create a new record of this player and increment their draws by 1
 
     def get_player_stats(self, player_name):
         """Get the statistics for the specified player."""
         return self.statistics.get(player_name, {"wins": 0, "losses": 0, "draws": 0})
     
-player_stats = PlayerStatistics()                       # Global variable to track player statistics
-
 class TicTacToeBoard:
     """Tic Tac Toe Board Class for GUI"""
 
@@ -376,7 +374,7 @@ def initialize_settings_window(root):
     create_radio_button(settings_window, "Easy", difficulty_var, "easy").grid(row=1, column=1, padx=10, pady=5)
     create_radio_button(settings_window, "Hard", difficulty_var, "hard").grid(row=1, column=2, padx=10, pady=5)
 
-    create_label(settings_window, "Enter the size of the board (3-5):").grid(row=2, column=0, padx=10, pady=5)
+    create_label(settings_window, "Enter the size of the board (3-8):").grid(row=2, column=0, padx=10, pady=5)
     board_size_entry = tk.Entry(settings_window)
     board_size_entry.grid(row=2, column=1, padx=10, pady=5)
 
@@ -435,8 +433,8 @@ def start_game(settings_window, board_size_entry, win_condition_entry, player_va
     board_size = int(board_size_text)
     win_condition = int(win_condition_text)
 
-    if board_size < 3 or board_size > 5:
-        messagebox.showerror("Error", "Board size must be between 3 and 5.")
+    if board_size < 3 or board_size > 8:
+        messagebox.showerror("Error", "Board size must be between 3 and 8.")
         return
 
     if win_condition < 3 or win_condition > board_size:
@@ -476,6 +474,8 @@ def main():
 
     # Start the main event loop to display the initial player settings window
     root.mainloop()
-        
+
+player_stats = PlayerStatistics()                       # Global variable to track player statistics
+
 if __name__ == "__main__":
     main()
