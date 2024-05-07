@@ -171,10 +171,33 @@ class Game:
             if self.check_consecutive(column, player_symbol, win_condition):
                 return True
 
-        # Check diagonals
+        # Check diagonals starting from each cell
+        for i in range(len(self.board)):
+            for j in range(len(self.board[0])):
+                # Check diagonal extending to the right
+                if j + win_condition <= len(self.board[0]) and i + win_condition <= len(self.board):
+                    diagonal_right = [self.board[i + k][j + k] for k in range(win_condition)]
+                    if self.check_consecutive(diagonal_right, player_symbol, win_condition):
+                        return True
+                # Check diagonal extending down
+                if i + win_condition <= len(self.board):
+                    diagonal_down = [self.board[i + k][j] for k in range(win_condition)]
+                    if self.check_consecutive(diagonal_down, player_symbol, win_condition):
+                        return True
+                # Check diagonal extending to the left and down
+                if j - win_condition + 1 >= 0 and i + win_condition <= len(self.board):
+                    diagonal_left_down = [self.board[i + k][j - k] for k in range(win_condition)]
+                    if self.check_consecutive(diagonal_left_down, player_symbol, win_condition):
+                        return True
+
+        # Check diagonals from top-right to bottom-left
         diagonal1 = [self.board[i][i] for i in range(len(self.board))]
+        if self.check_consecutive(diagonal1, player_symbol, win_condition):
+            return True
+
+        # Check diagonals from top-left to bottom-right
         diagonal2 = [self.board[i][len(self.board) - 1 - i] for i in range(len(self.board))]
-        if self.check_consecutive(diagonal1, player_symbol, win_condition) or self.check_consecutive(diagonal2, player_symbol, win_condition):
+        if self.check_consecutive(diagonal2, player_symbol, win_condition):
             return True
 
         return False
@@ -230,7 +253,7 @@ class Game:
             # Add randomness to the decision-making process so that AI will be more prone to mistakes
             return random.choice(empty_spaces) if empty_spaces else None    
         
-        else:
+        elif self.player2.difficulty == "hard":
             # Proceed with setting up the minimax algorithm using alpha-beta pruning for the AI
             best_score = -float("inf")
             best_move = None
@@ -238,6 +261,27 @@ class Game:
             beta = float("inf")
 
             for row, column in empty_spaces:
+                self.board[row][column] = player_symbol
+                score = self.minimax(self.board, 0, alpha, beta, False, win_condition, player_symbol, opponent_symbol, max_depth)
+                self.board[row][column] = " "
+
+                if score > best_score:
+                    best_score = score
+                    best_move = (row, column)
+
+            return best_move
+        
+        elif self.player2.difficulty == "very_hard":
+            # Proceed with setting up the minimax algorithm using alpha-beta pruning and a move ordering heuristic for the AI
+            best_score = -float("inf")
+            best_move = None
+            alpha = -float("inf")
+            beta = float("inf")
+
+            # Generate a list of moves sorted by a heuristic function
+            ordered_moves = self.order_moves(empty_spaces, player_symbol, opponent_symbol)
+
+            for row, column in ordered_moves:
                 self.board[row][column] = player_symbol
                 score = self.minimax(self.board, 0, alpha, beta, False, win_condition, player_symbol, opponent_symbol, max_depth)
                 self.board[row][column] = " "
@@ -282,13 +326,44 @@ class Game:
                 if beta <= alpha:
                     break  # Alpha cut-off
             return best_score
+        
+    def order_moves(self, empty_spaces: list, player_symbol: str, opponent_symbol: str) -> list:
+        """Orders the available moves based on a heuristic function (only for Very Hard difficulty)"""
+        ordered_moves = []
+
+        # Group moves by their impact on the game
+        winning_moves = []
+        blocking_moves = []
+
+        for row, col in empty_spaces:
+            self.board[row][col] = player_symbol
+            if self.is_win(player_symbol, self.win_condition):
+                winning_moves.append((row, col))
+            self.board[row][col] = " "
+
+            self.board[row][col] = opponent_symbol
+            if self.is_win(opponent_symbol, self.win_condition):
+                blocking_moves.append((row, col))
+            self.board[row][col] = " "
+
+        # Add winning moves first, then blocking moves, then other moves
+        ordered_moves.extend(winning_moves)
+        ordered_moves.extend(blocking_moves)
+        ordered_moves.extend([move for move in empty_spaces if move not in winning_moves and move not in blocking_moves])
+
+        return ordered_moves
 
     def ai_thread(self) -> None:
         """Thread for AI commands"""
         player_symbol = self.player2.symbol
         opponent_symbol = self.player1.symbol
         win_condition = self.win_condition
-        max_depth = 3                       # Default depth given so AI does not take too long for each move (more important for bigger boards)
+
+        # Set a maximum depth based on board size (important for gameplay reasons to ensure an AI does not take too long for bigger boards)
+        if self.board_size >= 6:
+            max_depth = 2
+        else:
+            max_depth = 3
 
         best_move = self.get_best_move(player_symbol, opponent_symbol, win_condition, max_depth)
         if best_move is not None:
@@ -382,6 +457,7 @@ def initialize_settings_window(root):
     create_label(settings_window, "Choose difficulty level:").grid(row=1, column=0, padx=10, pady=5)
     create_radio_button(settings_window, "Easy", difficulty_var, "easy").grid(row=1, column=1, padx=10, pady=5)
     create_radio_button(settings_window, "Hard", difficulty_var, "hard").grid(row=1, column=2, padx=10, pady=5)
+    create_radio_button(settings_window, "Very Hard", difficulty_var, "very_hard").grid(row=1, column=3, padx=10, pady=5)
 
     create_label(settings_window, "Enter the size of the board (3-8):").grid(row=2, column=0, padx=10, pady=5)
     board_size_entry = tk.Entry(settings_window)
