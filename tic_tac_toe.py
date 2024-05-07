@@ -57,24 +57,28 @@ class TicTacToeBoard:
         """Handles button click event"""
         if self.game_instance.get_move(row, col):
             threading.Thread(target=lambda: self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)).start()
+
+    def destroy_board_window(self):
+        """Destroys the TicTacToeBoard window"""
+        self.root.destroy()
             
 class Game:
     """Game Class for Tic Tac Toe Game"""
 
-    def __init__(self, root, settings_window, player1: Player, tic_tac_toe_board : TicTacToeBoard) -> None:
+    def __init__(self, root, settings_window, player1: Player, tic_tac_toe_board : TicTacToeBoard, board_size: int = None) -> None:
         self.root = root
         self.settings_window = settings_window
         self.player1 = player1
         self.player2 = None
         self.player_var = tk.StringVar(value="ai")
         self.difficulty_var = tk.StringVar(value="hard")
-        self.board_size = None
+        self.board_size = board_size
         self.win_condition = None
         self.board = None
         self.winner = None
         self.tic_tac_toe_board = tic_tac_toe_board
         self.current_player = 1
-
+        
     def initialize_game_board(self):
         """Initialize the game board after receiving input"""
         self.board = [[" " for _ in range(self.board_size)] for _ in range(self.board_size)]
@@ -87,21 +91,19 @@ class Game:
             self.player2 = Player("Player 2", "O") # Default human player 2
 
         # Start the game
-        self.play_game()
-
-    def play_game(self) -> None:
-        """Tic Tac Toe game with AI or another player"""
-        self.show_game_board()  # Update the GUI board at the beginning of the game
+        self.show_game_board()
+        # Update the GUI board at the beginning of the game
 
     def show_game_board(self):
         """Displays the Tic Tac Toe board window"""
         if self.board_size is not None and self.win_condition is not None:
-            board_root = tk.Tk()
-            board_root.title("Tic Tac Toe Board")
-            self.tic_tac_toe_board = TicTacToeBoard(board_root, self.board_size, self.win_condition, self, self.board)
+            self.board_window = tk.Toplevel(self.root)
+            self.board_window.title("Tic Tac Toe Board")
+            self.tic_tac_toe_board = TicTacToeBoard(self.board_window, self.board_size, self.win_condition, self, self.board)
             self.tic_tac_toe_board.board_size = self.board_size
             self.tic_tac_toe_board.win_condition = self.win_condition
-            board_root.mainloop()
+            self.board_window.deiconify()
+            self.settings_window.withdraw()
         else:
             messagebox.showerror("Error", "Please set the board size and win condition first.")
 
@@ -164,6 +166,7 @@ class Game:
         self.update_board(row, col, current_player)
         if self.evaluate(current_player.symbol):
             messagebox.showinfo("Winner", f"Congratulations! {current_player.name} wins!")
+            self.game_over_dialog()
         else:
             if self.current_player == 1:
                 self.current_player = 2
@@ -247,11 +250,13 @@ class Game:
 
             if self.evaluate(player_symbol):
                 messagebox.showinfo("Loser", "Sorry, you lose!")
+                self.game_over_dialog()
         else:
             print("AI couldn't find a move.")
 
         if not self.get_empty_spaces() and not self.evaluate(player_symbol) and not self.evaluate(opponent_symbol):
             messagebox.showinfo("Tie", "It's a tie!")
+            self.game_over_dialog()
             
     def ai_turn(self):
         """Handles the AI player's turn"""
@@ -263,6 +268,28 @@ class Game:
             return 1
         else:
             return 0
+        
+    def game_over_dialog(self):
+        """Displays a message box when the game is over, which allows for the player to choose their next action."""
+        choice = messagebox.askquestion("Game Over", "Do you want to play again with the same settings?", icon='question')
+        if choice == 'yes':
+            self.restart_game()
+        else:
+            self.tic_tac_toe_board.destroy_board_window() # Destroy the game board window
+            self.settings_window.deiconify()  # Show the settings window
+
+    def restart_game(self):
+        """Restarts the game with the same settings."""
+        # Clear the game board
+        self.board = [[" " for _ in range(self.board_size)] for _ in range(self.board_size)]
+        # Reset current player
+        self.current_player = 1
+        # Update GUI board
+        self.tic_tac_toe_board.update_gui_board(self.player1, self.player2)
+        # Destroy the existing game board window
+        self.tic_tac_toe_board.destroy_board_window()
+        # Show the new game board window
+        self.show_game_board()
 
 # End of Game Class
 
@@ -294,6 +321,8 @@ def initialize_settings_window(root):
     start_button = tk.Button(settings_window, text="Start Game", command=lambda: start_game(settings_window, board_size_entry, win_condition_entry, player_var, difficulty_var))
     start_button.grid(row=4, column=1, padx=10, pady=10)
 
+    return settings_window
+
 def start_game(settings_window, board_size_entry, win_condition_entry, player_var, difficulty_var):
     """Starts the Tic Tac Toe game with the selected settings"""
 
@@ -319,7 +348,7 @@ def start_game(settings_window, board_size_entry, win_condition_entry, player_va
     difficulty = difficulty_var.get()
     player1 = Player("Player 1", "X")  # Default human player
 
-    tic_tac_toe_game = Game(settings_window, settings_window, player1, None)
+    tic_tac_toe_game = Game(settings_window, settings_window, player1, None, board_size)
 
     if player_type == "ai":
         tic_tac_toe_game.player2 = Player("AI", "O", difficulty)
@@ -329,19 +358,22 @@ def start_game(settings_window, board_size_entry, win_condition_entry, player_va
     tic_tac_toe_game.board_size = board_size
     tic_tac_toe_game.win_condition = win_condition
 
-    tic_tac_toe_board = TicTacToeBoard(settings_window, board_size, win_condition, tic_tac_toe_game, None)  # Initialize with a temporary root
-
-    tic_tac_toe_board.game_instance = tic_tac_toe_game
-    tic_tac_toe_game.tic_tac_toe_board = tic_tac_toe_board
+    # Check if the Tic-Tac-Toe board is already initialized (for cases when a player might want to play again but would change settings)
+    if not hasattr(tic_tac_toe_game, 'tic_tac_toe_board'):
+        tic_tac_toe_board = TicTacToeBoard(settings_window, board_size, win_condition, tic_tac_toe_game, None)  # Initialize with a temporary root
+        tic_tac_toe_board.game_instance = tic_tac_toe_game
+        tic_tac_toe_game.tic_tac_toe_board = tic_tac_toe_board
 
     settings_window.withdraw()  # Hide the settings window
+    settings_window.update()
+    
     tic_tac_toe_game.initialize_game_board()
 
 def main():
     root = tk.Tk()
     root.withdraw()                     
     # Initialize the Game object
-    threading.Thread(target=initialize_settings_window, args=(root,)).start()
+    settings_window = initialize_settings_window(root)
 
     # Start the main event loop to display the initial player settings window
     root.mainloop()
