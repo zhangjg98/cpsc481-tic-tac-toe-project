@@ -15,7 +15,7 @@ class PlayerStatistics:
     """Class to track player statistics for the current session."""
 
     def __init__(self):
-        self.statistics = {}   # Initialization
+        self.statistics = {}
 
     def record_win(self, player_name):
         """Record a win for the player."""
@@ -53,12 +53,12 @@ class TicTacToeBoard:
         self.initialize_board()
 
     def initialize_board(self):
+        """Initializes the game board"""
         if self.board_initialized:
             return # Skip initialization if the board has already been initialized
         self.board_size = self.game_instance.board_size
         self.win_condition = self.game_instance.win_condition
 
-        """Initializes the game board"""
         if self.board_size is None:
             raise ValueError("Board size is not set.")
         self.board_buttons = []
@@ -95,7 +95,7 @@ class TicTacToeBoard:
     def handle_button_click(self, row, col):
         """Handles button click event"""
         if self.game_instance.get_move(row, col):
-            threading.Thread(target=lambda: self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)).start()
+            self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)
 
     def destroy_board_window(self):
         """Destroys the TicTacToeBoard window"""
@@ -124,17 +124,16 @@ class Game:
         # Set player2 based on selected player type
         player_type = self.player2.name
         if player_type == "AI":
-            self.player2 = Player("AI", "O", self.player2.difficulty)
+            self.player2 = Player("AI", "O", self.player2.difficulty) # Sets to AI with inputted difficulty
         else:
             self.player2 = Player("Player 2", "O") # Default human player 2
 
         # Start the game
         self.show_game_board()
-        # Update the GUI board at the beginning of the game
 
+        
     def show_game_board(self):
-        """Displays the Tic Tac Toe board window"""
-        if self.board_size is not None and self.win_condition is not None:
+            """Updates the GUI board at the beginning of the game"""
             self.board_window = tk.Toplevel(self.root)
             self.board_window.title("Tic Tac Toe Board")
             self.tic_tac_toe_board = TicTacToeBoard(self.board_window, self.board_size, self.win_condition, self, self.board)
@@ -142,8 +141,6 @@ class Game:
             self.tic_tac_toe_board.win_condition = self.win_condition
             self.board_window.deiconify()
             self.settings_window.withdraw()
-        else:
-            messagebox.showerror("Error", "Please set the board size and win condition first.")
 
     def update_board(self, row: int, col: int, current_player: Player) -> None:
         """Updates the game board with the player's move"""
@@ -196,26 +193,33 @@ class Game:
 
     def get_move(self, row, col):
         """Handles the player's move"""
+
+        # Makes sure the current player is correct
         if self.current_player == 1:
             current_player = self.player1
         else:
             current_player = self.player2
 
         self.update_board(row, col, current_player)
+
+        # Checks if the game is over. If not, switches the current_player to the next player
         if self.evaluate(current_player.symbol):
-            # Check for a win condition
+            # Check if a win has been achieved
             self.game_over_dialog(current_player)
+
         elif len(self.get_empty_spaces()) == 0:
-            # Check for a draw condition
+            # Check if a draw has occured
             self.game_over_dialog(None)
+        
         else:
+            # Checks if Player 2 is a human or AI if the game is not over.
             if self.current_player == 1:
                 self.current_player = 2
                 if self.player2.name == "AI":
                     self.ai_turn()
                     self.current_player = 1
             else:
-                self.current_player = 1
+                self.current_player = 1      # Executes when Player 2 is human so that Player 1 is now the current player
                     
     def get_best_move(self, player_symbol: str, opponent_symbol: str, win_condition: int, max_depth: int) -> tuple:
         """Uses the minimax algorithm with alpha-beta pruning to determine the best move for the AI player"""
@@ -223,9 +227,11 @@ class Game:
 
         # Check if the AI difficulty is easy
         if self.player2.difficulty == "easy":
-            # Add randomness to the decision-making process so that AI might be more prone to mistakes
+            # Add randomness to the decision-making process so that AI will be more prone to mistakes
             return random.choice(empty_spaces) if empty_spaces else None    
+        
         else:
+            # Proceed with setting up the minimax algorithm using alpha-beta pruning for the AI
             best_score = -float("inf")
             best_move = None
             alpha = -float("inf")
@@ -244,8 +250,8 @@ class Game:
 
     def minimax(self, board: list, depth: int, alpha: int, beta: int, is_maximizing: bool, win_condition: int, player_symbol: str, opponent_symbol: str, max_depth: int):
         """Minimax algorithm with alpha-beta pruning for AI player"""
-        # Base case: check if the game is over or the depth limit has been reached
 
+        # Base case: check if the game is over or the depth limit has been reached
         if depth == max_depth or self.evaluate(player_symbol) or self.evaluate(opponent_symbol):
             return self.evaluate(player_symbol) - self.evaluate(opponent_symbol)
         
@@ -282,7 +288,7 @@ class Game:
         player_symbol = self.player2.symbol
         opponent_symbol = self.player1.symbol
         win_condition = self.win_condition
-        max_depth = 3                       # Default depth
+        max_depth = 3                       # Default depth given so AI does not take too long for each move (more important for bigger boards)
 
         best_move = self.get_best_move(player_symbol, opponent_symbol, win_condition, max_depth)
         if best_move is not None:
@@ -309,6 +315,7 @@ class Game:
     def game_over_dialog(self, winner):
         """Displays a message box when the game is over, which allows for the player to choose their next action."""
 
+        # Separate message box to declare a winner/loser or draw result
         if winner:
             if winner.name == "AI":
                 messagebox.showinfo("Loser", "Sorry, you lose!")
@@ -330,6 +337,7 @@ class Game:
             else:
                 player_stats.record_draw("Player 2")
     
+        # New message box that asks the player if they want to play again with the same settings
         choice = messagebox.askquestion("Game Over", "Do you want to play again with the same settings?", icon='question')
         if choice == 'yes':
             self.restart_game()
