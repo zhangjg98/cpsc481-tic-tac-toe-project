@@ -73,6 +73,7 @@ class TicTacToeBoard:
     
     def update_gui_board(self, player1, player2):
         """Updates the GUI board with the player symbols"""
+        
         if self.board_size is None or self.game_board is None:
             return  # Return if board size or board is not initialized
         
@@ -82,9 +83,9 @@ class TicTacToeBoard:
             for col in range(self.board_size):
                 button = self.board_buttons[row][col]
                 if self.game_board[row][col] == player1.symbol:
-                    button.config(text="X", font=("Arial", font_size), state='disabled', fg='blue')
+                    button.config(text="X", font=("Arial", font_size), fg='blue')
                 elif self.game_board[row][col] == player2.symbol:
-                    button.config(text="O", font=("Arial", font_size), state='disabled', fg='red')
+                    button.config(text="O", font=("Arial", font_size), fg='red')
                 else:
                     self.board_buttons[row][col].config(text="", font=("Arial", font_size), state='normal')
     
@@ -92,10 +93,10 @@ class TicTacToeBoard:
         """Handles button click event"""
         if self.game_board[row][col] == " ":
             if self.game_instance.get_move(row, col):
-                self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)
+                pass
         else:
             messagebox.showerror("Invalid Move", "This square is already filled. Please select an empty square.")
-
+            
     def destroy_board_window(self):
         """Destroys the TicTacToeBoard window"""
         self.root.destroy()
@@ -129,17 +130,16 @@ class Game:
 
         # Start the game
         self.show_game_board()
-
         
     def show_game_board(self):
-            """Updates the GUI board at the beginning of the game"""
-            self.board_window = tk.Toplevel(self.root)
-            self.board_window.title("Tic Tac Toe Board")
-            self.tic_tac_toe_board = TicTacToeBoard(self.board_window, self.board_size, self.win_condition, self, self.board)
-            self.tic_tac_toe_board.board_size = self.board_size
-            self.tic_tac_toe_board.win_condition = self.win_condition
-            self.board_window.deiconify()
-            self.settings_window.withdraw()
+        """Updates the GUI board at the beginning of the game"""
+        self.board_window = tk.Toplevel(self.root)
+        self.board_window.title("Tic Tac Toe Board")
+        self.tic_tac_toe_board = TicTacToeBoard(self.board_window, self.board_size, self.win_condition, self, self.board)
+        self.tic_tac_toe_board.board_size = self.board_size
+        self.tic_tac_toe_board.win_condition = self.win_condition
+        self.board_window.deiconify()
+        self.settings_window.withdraw()
 
     def update_board(self, row: int, col: int, current_player: Player) -> None:
         """Updates the game board with the player's move"""
@@ -195,7 +195,6 @@ class Game:
 
     def get_move(self, row, col):
         """Handles the player's move"""
-
         # Makes sure the current player is correct
         if self.current_player == 1:
             current_player = self.player1
