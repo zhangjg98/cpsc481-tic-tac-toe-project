@@ -85,14 +85,16 @@ class TicTacToeBoard:
                     button.config(text="X", font=("Arial", font_size), state='disabled', fg='blue')
                 elif self.game_board[row][col] == player2.symbol:
                     button.config(text="O", font=("Arial", font_size), state='disabled', fg='red')
-                    button.config(disabledforeground='red')
                 else:
                     self.board_buttons[row][col].config(text="", font=("Arial", font_size), state='normal')
     
     def handle_button_click(self, row, col):
         """Handles button click event"""
-        if self.game_instance.get_move(row, col):
-            self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)
+        if self.game_board[row][col] == " ":
+            if self.game_instance.get_move(row, col):
+                self.update_gui_board(self.game_instance.player1, self.game_instance.player2, row, col)
+        else:
+            messagebox.showerror("Invalid Move", "This square is already filled. Please select an empty square.")
 
     def destroy_board_window(self):
         """Destroys the TicTacToeBoard window"""
@@ -359,10 +361,13 @@ class Game:
             self.game_over_dialog(None)
         
         # Re-enable all buttons after AI has made its move
-        for row in range(self.board_size):
-            for col in range(self.board_size):
-                self.tic_tac_toe_board.board_buttons[row][col].config(state='normal')
-            
+        if hasattr(self.tic_tac_toe_board, 'board_buttons'):
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    button = self.tic_tac_toe_board.board_buttons[row][col]
+                    if button.winfo_exists():
+                        button.config(state='normal')            
+                        
     def ai_turn(self):
         """Handles the AI player's turn"""
         threading.Thread(target=self.ai_thread).start()
@@ -376,7 +381,7 @@ class Game:
                 
     def game_over_dialog(self, winner):
         """Displays a message box when the game is over, which allows for the player to choose their next action."""
-        
+
         # Separate message box to declare a winner/loser or draw result
         if winner:
             if winner.name == "AI":
@@ -441,7 +446,7 @@ def initialize_settings_window(root):
     create_radio_button(settings_window, "Human", player_var, "human").grid(row=0, column=2, padx=10, pady=5)
 
     difficulty_var = tk.StringVar(value="hard")
-    create_label(settings_window, "Choose difficulty level:").grid(row=1, column=0, padx=10, pady=5)
+    create_label(settings_window, "Choose AI difficulty level:").grid(row=1, column=0, padx=10, pady=5)
     create_radio_button(settings_window, "Easy", difficulty_var, "easy").grid(row=1, column=1, padx=10, pady=5)
     create_radio_button(settings_window, "Hard", difficulty_var, "hard").grid(row=1, column=2, padx=10, pady=5)
     create_radio_button(settings_window, "Very Hard", difficulty_var, "very_hard").grid(row=1, column=3, padx=10, pady=5)
