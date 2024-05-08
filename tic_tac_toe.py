@@ -49,13 +49,10 @@ class TicTacToeBoard:
         self.root = root
         self.game_instance = game_instance
         self.game_board = game_board
-        self.board_initialized = False
         self.initialize_board()
 
     def initialize_board(self):
         """Initializes the game board"""
-        if self.board_initialized:
-            return # Skip initialization if the board has already been initialized
         self.board_size = self.game_instance.board_size
         self.win_condition = self.game_instance.win_condition
 
@@ -73,8 +70,6 @@ class TicTacToeBoard:
         for i in range(self.board_size):
             self.root.grid_rowconfigure(i + 3, weight=1)
             self.root.grid_columnconfigure(i, weight=1)
-
-        self.board_initialized = True
     
     def update_gui_board(self, player1, player2):
         """Updates the GUI board with the player symbols"""
@@ -85,10 +80,12 @@ class TicTacToeBoard:
 
         for row in range(self.board_size):
             for col in range(self.board_size):
+                button = self.board_buttons[row][col]
                 if self.game_board[row][col] == player1.symbol:
-                    self.board_buttons[row][col].config(text="X", font=("Arial", font_size), state='disabled', disabledforeground='blue')
+                    button.config(text="X", font=("Arial", font_size), state='disabled', fg='blue')
                 elif self.game_board[row][col] == player2.symbol:
-                    self.board_buttons[row][col].config(text="O", font=("Arial", font_size), state='disabled', disabledforeground='red')
+                    button.config(text="O", font=("Arial", font_size), state='disabled', fg='red')
+                    button.config(disabledforeground='red')
                 else:
                     self.board_buttons[row][col].config(text="", font=("Arial", font_size), state='normal')
     
@@ -160,45 +157,25 @@ class Game:
     def is_win(self, player_symbol: str, win_condition: int) -> bool:
         """Checks if the specified player has won the game"""
 
-        # Check rows
-        for row in self.board:
-            if self.check_consecutive(row, player_symbol, win_condition):
-                return True
+        # Check rows and columns
+        for i in range(self.board_size):
+            for j in range(self.board_size - win_condition + 1):
+                # Check rows
+                if all(self.board[i][j + k] == player_symbol for k in range(win_condition)):
+                    return True
+                # Check columns
+                if all(self.board[j + k][i] == player_symbol for k in range(win_condition)):
+                    return True
 
-        # Check columns
-        for i in range(len(self.board)):
-            column = [self.board[j][i] for j in range(len(self.board))]
-            if self.check_consecutive(column, player_symbol, win_condition):
-                return True
-
-        # Check diagonals starting from each cell
-        for i in range(len(self.board)):
-            for j in range(len(self.board[0])):
-                # Check diagonal extending to the right
-                if j + win_condition <= len(self.board[0]) and i + win_condition <= len(self.board):
-                    diagonal_right = [self.board[i + k][j + k] for k in range(win_condition)]
-                    if self.check_consecutive(diagonal_right, player_symbol, win_condition):
-                        return True
-                # Check diagonal extending down
-                if i + win_condition <= len(self.board):
-                    diagonal_down = [self.board[i + k][j] for k in range(win_condition)]
-                    if self.check_consecutive(diagonal_down, player_symbol, win_condition):
-                        return True
-                # Check diagonal extending to the left and down
-                if j - win_condition + 1 >= 0 and i + win_condition <= len(self.board):
-                    diagonal_left_down = [self.board[i + k][j - k] for k in range(win_condition)]
-                    if self.check_consecutive(diagonal_left_down, player_symbol, win_condition):
-                        return True
-
-        # Check diagonals from top-right to bottom-left
-        diagonal1 = [self.board[i][i] for i in range(len(self.board))]
-        if self.check_consecutive(diagonal1, player_symbol, win_condition):
-            return True
-
-        # Check diagonals from top-left to bottom-right
-        diagonal2 = [self.board[i][len(self.board) - 1 - i] for i in range(len(self.board))]
-        if self.check_consecutive(diagonal2, player_symbol, win_condition):
-            return True
+        # Check diagonals
+        for i in range(self.board_size - win_condition + 1):
+            for j in range(self.board_size - win_condition + 1):
+                # Check diagonal from top-left to bottom-right
+                if all(self.board[i + k][j + k] == player_symbol for k in range(win_condition)):
+                    return True
+                # Check diagonal from top-right to bottom-left
+                if all(self.board[i + k][self.board_size - 1 - j - k] == player_symbol for k in range(win_condition)):
+                    return True
 
         return False
 
@@ -359,6 +336,11 @@ class Game:
         opponent_symbol = self.player1.symbol
         win_condition = self.win_condition
 
+        # Disable all buttons so player cannot press them during AI's turn
+        for row in range(self.board_size):
+            for col in range(self.board_size):
+                self.tic_tac_toe_board.board_buttons[row][col].config(state='disabled')
+
         # Set a maximum depth based on board size (important for gameplay reasons to ensure an AI does not take too long for bigger boards)
         if self.board_size >= 6:
             max_depth = 2
@@ -375,6 +357,11 @@ class Game:
 
         if not self.get_empty_spaces() and not self.evaluate(player_symbol) and not self.evaluate(opponent_symbol):
             self.game_over_dialog(None)
+        
+        # Re-enable all buttons after AI has made its move
+        for row in range(self.board_size):
+            for col in range(self.board_size):
+                self.tic_tac_toe_board.board_buttons[row][col].config(state='normal')
             
     def ai_turn(self):
         """Handles the AI player's turn"""
@@ -386,10 +373,10 @@ class Game:
             return 1
         else:
             return 0
-        
+                
     def game_over_dialog(self, winner):
         """Displays a message box when the game is over, which allows for the player to choose their next action."""
-
+        
         # Separate message box to declare a winner/loser or draw result
         if winner:
             if winner.name == "AI":
