@@ -427,11 +427,11 @@ class Game:
 # End of Game Class
 
 def create_radio_button(parent, text, var, value):
-    """Create a radio button with the given text, variable, and value."""
+    """Creates a radio button with the given text, variable, and value."""
     return tk.Radiobutton(parent, text=text, variable=var, value=value)
 
 def create_label(parent, text):
-    """Create a label with the given text."""
+    """Creates a label with the given text."""
     return tk.Label(parent, text=text)
 
 def initialize_settings_window(root):
@@ -568,7 +568,7 @@ def start_game(settings_window, board_size_entry, win_condition_entry, player_va
 def main():
     root = tk.Tk()
     root.withdraw()                     
-    # Initialize the Game object
+    # Initializes the settings window
     settings_window = initialize_settings_window(root)
 
     # Start the main event loop to display the initial player settings window
