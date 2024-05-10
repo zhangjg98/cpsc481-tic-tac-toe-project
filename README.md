@@ -55,14 +55,14 @@ This section will detail the relevant functions for the classes that were listed
 - destroy_board_window - destroys the Tic-Tac-Toe board window when it is no longer needed.
 
 **Game:**
-- initialize_game_board - initializes the game board layout for other functions in the Game class to use
-- show_game_board - generates the GUI board at the beginning of the game so the game can start
-- update_board - updates the game board layout and calls the update_gui_board function to update the GUI board
-- get_empty_spaces - retrieves all of the empty spaces left on the board
-- is_win - checks if the specified player has won the game
-- check_consecutive - checks for a sufficient number of consecutive symbols
-- get_move - handles the player moves and turn switching
-- get_best_move - handles the AI difficulty input and calls the minimax function to determine the best move for the AI
+- initialize_game_board - initializes the game board layout for other functions in the Game class to use.
+- show_game_board - generates the GUI board at the beginning of the game so the game can start.
+- update_board - updates the game board layout and calls the update_gui_board function to update the GUI board.
+- get_empty_spaces - retrieves all of the empty spaces left on the board.
+- is_win - checks if the specified player has won the game.
+- check_consecutive - checks for a sufficient number of consecutive symbols.
+- get_move - handles the player moves and turn switching.
+- get_best_move - handles the AI difficulty input and calls the minimax function to determine the best move for the AI.
 - minimax - the minimax algorithm with alpha-beta pruning which helps the decision making for the AI.
 - order_moves - a heuristic function to help sort out optimal moves for the 'Very Hard' difficulty AI.
 - ai_thread - thread for AI commands.
