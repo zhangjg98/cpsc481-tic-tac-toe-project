@@ -30,6 +30,56 @@ The AI opponent on Hard difficulty uses the minimax algorithm with alpha beta pr
 
 The AI opponent on Very Hard difficulty uses the same algorithm as the Hard AI opponent but also prioritizes moves that would be considered game-winning or prevent a loss. This improves the performance of the algorithm even further, making it harder for the human player to defeat them.
 
+## Classes
+
+In the code, there are four classes.
+- 'Player' class sets the name, symbol (X or O), and AI difficulty (if one chooses to play against an AI opponent).
+- 'PlayerStatistics' is the class that contains functions that help with tracking statistics for the current session.
+- 'TicTacToeBoard' is the class that contains functions that initialize, update, and close the game board in the Tkinter GUI interface. It also handles button clicks on the board.
+- 'Game' is the class that handles much of the game logic, including the handling of player moves, identifying wins/losses/draws, and the incorporation of the AI algorithm.
+
+## Functions
+
+This section will detail the relevant functions for the classes that were listed in the previous section as well as any functions that did not fall under a class.
+
+**PlayerStatistics:**
+- record_win - records a win for the respective player.
+- record_loss - records a loss for the respective player.
+- record_draw - records a draw for the respective player.
+- get_player_stats - gets the statistics for the specified player.
+
+**TicTacToeBoard:**
+- initialize_board - initializes the GUI game board based on win condition and board size inputs.
+- update_gui_board - updates the GUI game board with the player symbols once a move has been made.
+- handle_button_click - handles the button click event.
+- destroy_board_window - destroys the Tic-Tac-Toe board window when it is no longer needed.
+
+**Game:**
+- initialize_game_board - initializes the game board layout for other functions in the Game class to use
+- show_game_board - generates the GUI board at the beginning of the game so the game can start
+- update_board - updates the game board layout and calls the update_gui_board function to update the GUI board
+- get_empty_spaces - retrieves all of the empty spaces left on the board
+- is_win - checks if the specified player has won the game
+- check_consecutive - checks for a sufficient number of consecutive symbols
+- get_move - handles the player moves and turn switching
+- get_best_move - handles the AI difficulty input and calls the minimax function to determine the best move for the AI
+- minimax - the minimax algorithm with alpha-beta pruning which helps the decision making for the AI.
+- order_moves - a heuristic function to help sort out optimal moves for the 'Very Hard' difficulty AI.
+- ai_thread - thread for AI commands.
+- ai_turn - handles the AI's turn.
+- evaluate - evaluates the current state of the board.
+- game_over_dialog - displays a message box when the game is over and prompts the player to make a decision on whether they'd like to play again with the same settings.
+- restart_game - restarts the game with the same settings already inputted.
+
+**Other Functions (for the GUI settings window):**
+- create_radio_button - creates a radio button with the given text, variable, and value.
+- create_label - creates a label with the given text.
+- initialize_settings_window - Creates the settings window for selecting player type, difficulty, board size, and win condition.
+- view_statistics - displays a new GUI window to show player statistics.
+- on_close - function within the view_statistics function that clear the references to the statistics window in the parent_window.
+- start_game - starts the game with the selected settings that the player confirmed and handles invalid inputs.
+- main - calls the settings_window function and starts a main loop to display the initial settings window.
+
 ## References and Credits
 
 The original implementation of the Tic-Tac-Toe game that this program built upon is from [this repository](https://github.com/mariahrucker/Tic-Tac-Toe). Their implementation of Tic Tac Toe is licensed under the MIT License. See the LICENSE file for more information. This implementation of Tic-Tac-Toe was created by Jason Zhang.
